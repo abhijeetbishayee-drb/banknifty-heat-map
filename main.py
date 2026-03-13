@@ -18,7 +18,7 @@ from kivy.core.window import Window
 from kivy.metrics import dp, sp
 
 # Debug log
-LOG_PATH = '/data/data/com.nse.niftyheatmap/files/debug.log'
+LOG_PATH = '/data/data/com.nse.bankniftyheatmap/files/debug.log'
 def dlog(msg):
     try:
         with open(LOG_PATH, 'a') as f:
@@ -33,34 +33,39 @@ except Exception:
 
 dlog("APP STARTING - Python: " + sys.version)
 
-# Nifty 50 tickers — TATAMOTORS replaced with TVSMOTOR (TMPV)
-NIFTY50 = [
-    "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS",
-    "HINDUNILVR.NS", "ITC.NS", "SBIN.NS", "BHARTIARTL.NS", "KOTAKBANK.NS",
-    "LT.NS", "AXISBANK.NS", "ASIANPAINT.NS", "MARUTI.NS", "HCLTECH.NS",
-    "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS", "BAJFINANCE.NS", "WIPRO.NS",
-    "ONGC.NS", "NTPC.NS", "POWERGRID.NS", "NESTLEIND.NS", "TECHM.NS",
-    "M&M.NS", "ADANIENT.NS", "ADANIPORTS.NS", "COALINDIA.NS", "JSWSTEEL.NS",
-    "TVSMOTOR.NS", "TATASTEEL.NS", "BAJAJFINSV.NS", "BPCL.NS", "DRREDDY.NS",
-    "CIPLA.NS", "EICHERMOT.NS", "HEROMOTOCO.NS", "INDUSINDBK.NS", "GRASIM.NS",
-    "APOLLOHOSP.NS", "BRITANNIA.NS", "DIVISLAB.NS", "TATACONSUM.NS", "SBILIFE.NS",
-    "HDFCLIFE.NS", "BAJAJ-AUTO.NS", "UPL.NS", "LTIMINDLTD.NS", "HINDALCO.NS",
+# Bank Nifty 14 constituents (as of March 2026)
+BANKNIFTY = [
+    "HDFCBANK.NS",    # HDFC Bank          ~26.35%
+    "SBIN.NS",        # State Bank of India ~20.71%
+    "ICICIBANK.NS",   # ICICI Bank          ~18.94%
+    "AXISBANK.NS",    # Axis Bank            ~8.24%
+    "KOTAKBANK.NS",   # Kotak Mahindra Bank  ~7.86%
+    "BANKBARODA.NS",  # Bank of Baroda       ~3.07%
+    "UNIONBANK.NS",   # Union Bank of India  ~2.87%
+    "PNB.NS",         # Punjab National Bank ~2.72%
+    "CANBK.NS",       # Canara Bank          ~2.60%
+    "AUBANK.NS",      # AU Small Finance Bk  ~1.42%
+    "INDUSINDBK.NS",  # IndusInd Bank        ~1.41%
+    "FEDERALBNK.NS",  # Federal Bank         ~1.37%
+    "YESBANK.NS",     # Yes Bank             ~1.26%
+    "IDFCFIRSTB.NS",  # IDFC First Bank      ~1.17%
 ]
 
 SHORT_NAMES = {
-    "HINDUNILVR.NS": "HINDUNLVR",
-    "BHARTIARTL.NS": "BHARTIARTL",
-    "BAJAJFINSV.NS": "BAJAJFINS",
-    "APOLLOHOSP.NS": "APOLLOHOS",
-    "TATACONSUM.NS": "TATACONSU",
-    "HEROMOTOCO.NS": "HEROMOTOC",
+    "HDFCBANK.NS":   "HDFCBANK",
+    "SBIN.NS":       "SBIN",
+    "ICICIBANK.NS":  "ICICIBANK",
+    "AXISBANK.NS":   "AXISBANK",
+    "KOTAKBANK.NS":  "KOTAK",
+    "BANKBARODA.NS": "BANKBARO",
+    "UNIONBANK.NS":  "UNIONBNK",
+    "PNB.NS":        "PNB",
+    "CANBK.NS":      "CANBK",
+    "AUBANK.NS":     "AUBANK",
     "INDUSINDBK.NS": "INDUSINDB",
-    "ULTRACEMCO.NS": "ULTRACEMC",
-    "BAJAJ-AUTO.NS": "BAJAJ-AUT",
-    "ADANIPORTS.NS": "ADANIPORT",
-    "LTIMINDLTD.NS": "LTIM",
-    "COALINDIA.NS":  "COALINDIA",
-    "TVSMOTOR.NS":   "TMPV",
+    "FEDERALBNK.NS": "FEDERALBNK",
+    "YESBANK.NS":    "YESBANK",
+    "IDFCFIRSTB.NS": "IDFCFIRST",
 }
 
 def get_short_name(ticker):
@@ -88,7 +93,7 @@ def pct_to_color(pct):
     else:
         return (0.55, 0.0, 0.0, 1)
 
-def fetch_nifty_data():
+def fetch_banknifty_data():
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     headers = {
@@ -115,8 +120,8 @@ def fetch_nifty_data():
             dlog(f"Error fetching {ticker}: {e}")
             return ticker, (None, None)
 
-    # Fetch index and all stocks in parallel
-    all_tickers = ['^NSEI'] + NIFTY50
+    # Fetch Bank Nifty index and all 14 stocks in parallel
+    all_tickers = ['^NSEBANK'] + BANKNIFTY
     results = {}
     index_data = {}
 
@@ -124,7 +129,7 @@ def fetch_nifty_data():
         futures = {executor.submit(fetch_one, t): t for t in all_tickers}
         for future in as_completed(futures):
             ticker, value = future.result()
-            if ticker == '^NSEI':
+            if ticker == '^NSEBANK':
                 if value[0] is not None and value[1] is not None:
                     curr = value[0]
                     pct = value[1]
@@ -191,7 +196,7 @@ class StockTile(BoxLayout):
             self.pct_label.text = ''
 
 
-class NiftyHeatmapApp(App):
+class BankNiftyHeatmapApp(App):
     def build(self):
         Window.clearcolor = (0.05, 0.05, 0.05, 1)
         self.stock_data = {}
@@ -209,7 +214,7 @@ class NiftyHeatmapApp(App):
         header.bind(pos=lambda i, v: setattr(self.hdr_rect, 'pos', v),
                     size=lambda i, v: setattr(self.hdr_rect, 'size', v))
 
-        title = Label(text='[b]NIFTY 50  HEATMAP[/b]', markup=True,
+        title = Label(text='[b]BANK NIFTY  HEATMAP[/b]', markup=True,
                       font_size=sp(14), color=(1, 0.85, 0.1, 1),
                       size_hint_x=0.38, halign='left', valign='middle')
         title.bind(size=title.setter('text_size'))
@@ -238,7 +243,7 @@ class NiftyHeatmapApp(App):
         self.index_bar.bind(pos=lambda i, v: setattr(self.idx_rect, 'pos', v),
                             size=lambda i, v: setattr(self.idx_rect, 'size', v))
 
-        self.nifty_label = Label(text='NIFTY 50  --', font_size=sp(11),
+        self.nifty_label = Label(text='BANK NIFTY  --', font_size=sp(11),
                                  bold=True, color=(0.8, 0.8, 0.8, 1),
                                  halign='left', valign='middle')
         self.nifty_label.bind(size=self.nifty_label.setter('text_size'))
@@ -251,13 +256,13 @@ class NiftyHeatmapApp(App):
         self.index_bar.add_widget(self.nifty_label)
         self.index_bar.add_widget(self.updated_label)
 
-        # ── Heatmap grid (scrollable) ────────────────────────────
+        # ── Heatmap grid (scrollable) — 4 cols suits 14 tiles ────
         self.scroll = ScrollView(do_scroll_x=False)
-        self.grid = GridLayout(cols=5, spacing=dp(2), padding=dp(2),
+        self.grid = GridLayout(cols=4, spacing=dp(2), padding=dp(2),
                                size_hint_y=None)
         self.grid.bind(minimum_height=self.grid.setter('height'))
 
-        for ticker in NIFTY50:
+        for ticker in BANKNIFTY:
             tile = StockTile(ticker, tile_height=dp(68))
             self.tiles[ticker] = tile
             self.grid.add_widget(tile)
@@ -318,7 +323,7 @@ class NiftyHeatmapApp(App):
     def fetch_data(self):
         dlog("fetch_data called")
         try:
-            results, index_data = fetch_nifty_data()
+            results, index_data = fetch_banknifty_data()
             dlog(f"Got {len(results)} results, index={index_data}")
 
             def update_ui(dt):
@@ -327,7 +332,7 @@ class NiftyHeatmapApp(App):
 
                 # Sort tiles by pct descending
                 sorted_tickers = sorted(
-                    NIFTY50,
+                    BANKNIFTY,
                     key=lambda t: results.get(t, (None, None))[1] or -999,
                     reverse=True
                 )
@@ -346,7 +351,7 @@ class NiftyHeatmapApp(App):
                     sign = '+' if pct >= 0 else ''
                     color = '00cc44' if pct >= 0 else 'ff4444'
                     self.nifty_label.text = (
-                        f'[b]NIFTY 50[/b]  [color={color}]{p:,.2f}  '
+                        f'[b]BANK NIFTY[/b]  [color={color}]{p:,.2f}  '
                         f'{sign}{pct:.2f}%  ({sign}{pts:.2f} pts)[/color]'
                     )
                     self.nifty_label.markup = True
@@ -356,9 +361,9 @@ class NiftyHeatmapApp(App):
 
                 # Top gainers / losers
                 valid = [(t, results[t][0], results[t][1])
-                         for t in NIFTY50 if results[t][1] is not None]
+                         for t in BANKNIFTY if results[t][1] is not None]
                 gainers = sorted(valid, key=lambda x: x[2], reverse=True)[:4]
-                losers = sorted(valid, key=lambda x: x[2])[:4]
+                losers  = sorted(valid, key=lambda x: x[2])[:4]
 
                 g_text = '\n'.join(
                     f'{get_short_name(t):<10}  +{pct:.2f}%  Rs.{price:,.2f}'
@@ -372,7 +377,7 @@ class NiftyHeatmapApp(App):
                 self.losers_label.text = l_text
 
                 loaded = sum(1 for p, _ in results.values() if p is not None)
-                self.status_label.text = f'({loaded}/50)'
+                self.status_label.text = f'({loaded}/14)'
 
             Clock.schedule_once(update_ui, 0)
 
@@ -384,4 +389,4 @@ class NiftyHeatmapApp(App):
 
 
 if __name__ == '__main__':
-    NiftyHeatmapApp().run()
+    BankNiftyHeatmapApp().run()
